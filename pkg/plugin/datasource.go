@@ -289,37 +289,25 @@ func ptrToString(s string) *string {
 // datasource configuration page which allows users to verify that
 // a datasource is working as expected.
 func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
-	if d.settings == nil || d.settings.Secrets == nil {
-		return &backend.CheckHealthResult{
-			Status:  backend.HealthStatusError,
-			Message: "Plugin settings not loaded correctly",
-		}, nil
-	}
+	log.DefaultLogger.Info("Checking health", "AccountID", d.settings.AccountID)
 
-	if d.settings.AccountID == "" {
-		return &backend.CheckHealthResult{
-			Status:  backend.HealthStatusError,
-			Message: "Account ID is missing",
-		}, nil
-	}
+	var status = backend.HealthStatusOk
+	var message = "Cloudflare D1 plugin is running" // Default message, will be overridden
 
-	if d.settings.DatabaseID == "" {
-		return &backend.CheckHealthResult{
-			Status:  backend.HealthStatusError,
-			Message: "Database ID is missing",
-		}, nil
-	}
-
-	if d.settings.Secrets.APIToken == "" {
-		return &backend.CheckHealthResult{
-			Status:  backend.HealthStatusError,
-			Message: "API Token is missing",
-		}, nil
-	}
-
-	// Construct Cloudflare D1 API URL
 	apiURL := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/d1/database/%s/query",
 		d.settings.AccountID, d.settings.DatabaseID)
+
+	// Basic check: ensure settings are present
+	if d.settings.AccountID == "" || d.settings.DatabaseID == "" || d.settings.Secrets.APIToken == "" {
+		status = backend.HealthStatusError
+		// Ensure the message starts with "Health check failed:" for the e2e test
+		message = "Health check failed: Account ID, Database ID, or API Token is missing in datasource configuration"
+		log.DefaultLogger.Error("Health check failed: missing configuration", "AccountID", d.settings.AccountID, "DatabaseID", d.settings.DatabaseID, "APITokenSet", d.settings.Secrets.APIToken != "")
+		return &backend.CheckHealthResult{
+			Status:  status,
+			Message: message,
+		}, nil
+	}
 
 	// Prepare request body
 	queryPayload := map[string]string{"sql": "SELECT 1;"}
@@ -373,11 +361,11 @@ func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequ
 		}, nil
 	}
 
-	// Optionally, you could parse the response to ensure it's valid if SELECT 1 returns specific data.
-	// For now, a 200 OK is sufficient for a health check.
+	// If we reach here, the API call was successful
+	message = "Health check successful: Successfully connected to Cloudflare D1."
 
 	return &backend.CheckHealthResult{
-		Status:  backend.HealthStatusOk,
-		Message: "Successfully connected to Cloudflare D1 and executed test query.",
+		Status:  status,
+		Message: message,
 	}, nil
 }
