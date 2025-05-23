@@ -1,0 +1,17 @@
+apiVersion: 1
+
+datasources:
+  - name: 'Cloudflare D1'
+    type: 'cloudflare-d1-datasource'
+    access: proxy
+    isDefault: false
+    orgId: 1
+    version: 1
+    editable: true
+    jsonData: {}
+    # Secure JSON data (like API Token) should be configured
+    # manually in the Grafana UI for the development environment,
+    # or provisioned via environment variables for production setups.
+    # Example structure if you were to set it here (but values are sensitive):
+    # secureJsonData:
+    #   apiToken: "your_api_token_here_if_not_using_env_vars"
