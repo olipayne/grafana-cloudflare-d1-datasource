@@ -30,7 +30,7 @@ var (
 )
 
 // NewDatasource creates a new datasource instance.
-func NewDatasource(settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+func NewDatasource(ctx context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 	pluginSettings, err := models.LoadPluginSettings(settings)
 	if err != nil {
 		return nil, fmt.Errorf("could not load plugin settings: %w", err)

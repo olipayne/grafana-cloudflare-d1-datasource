@@ -9,7 +9,7 @@
   "info": {
     "description": "Grafana Data Source for Cloudflare D1",
     "author": {
-      "name": "Oli Payne"
+      "name": "Oliver Payne"
     },
     "keywords": [
       "datasource",
@@ -28,7 +28,12 @@
         "url": "https://github.com/olipayne/grafana-cloudflare-d1-datasource"
       }
     ],
-    "screenshots": [],
+    "screenshots": [
+      {
+        "name": "D1 Query",
+        "path": "img/d1.png"
+      }
+    ],
     "version": "%VERSION%",
     "updated": "%TODAY%"
   },
