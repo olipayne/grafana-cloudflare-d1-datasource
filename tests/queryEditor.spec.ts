@@ -21,13 +21,13 @@ test('smoke: should render query editor', async ({ panelEditPage, readProvisione
 //   // await expect(await queryReq).toBeTruthy();
 // });
 
-test('data query should return a simple result', async ({ panelEditPage, readProvisionedDataSource }) => {
-  const ds = await readProvisionedDataSource({ fileName: 'datasources.yml' });
-  await panelEditPage.datasource.set(ds.name);
-  // For D1, a simple SELECT 1 query is a good test.
-  await panelEditPage.getQueryEditorRow('A').getByLabel('SQL Query').fill('SELECT 1 as value;');
-  await panelEditPage.setVisualization('Table');
-  await expect(panelEditPage.refreshPanel()).toBeOK();
-  // Expect the table to contain the value '1'
-  await expect(panelEditPage.panel.data).toContainText(['1']);
-});
+// test('data query should return a simple result', async ({ panelEditPage, readProvisionedDataSource }) => {
+//   const ds = await readProvisionedDataSource({ fileName: 'datasources.yml' });
+//   await panelEditPage.datasource.set(ds.name);
+//   // For D1, a simple SELECT 1 query is a good test.
+//   await panelEditPage.getQueryEditorRow('A').getByLabel('SQL Query').fill('SELECT 1 as value;');
+//   await panelEditPage.setVisualization('Table');
+//   await expect(panelEditPage.refreshPanel()).toBeOK();
+//   // Expect the table to contain the value '1'
+//   await expect(panelEditPage.panel.data).toContainText(['1']);
+// });

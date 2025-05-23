@@ -108,7 +108,7 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 		return dataResponse
 	}
 
-	httpClient := &http.Client{Timeout: 30 * time.Second}
+	httpClient := &http.Client{Timeout: 10 * time.Second}
 	httpReq, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonBody))
 	if err != nil {
 		dataResponse.Error = fmt.Errorf("error creating HTTP request for D1: %w", err)
