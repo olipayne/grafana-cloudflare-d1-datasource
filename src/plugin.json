@@ -34,7 +34,7 @@
         "path": "img/d1.png"
       }
     ],
-    "version": "0.1.2",
+    "version": "%VERSION%",
     "updated": "%TODAY%"
   },
   "dependencies": {
