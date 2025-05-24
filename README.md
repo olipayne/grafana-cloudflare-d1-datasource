@@ -148,7 +148,7 @@ Contributions are welcome! Please open an issue or submit a pull request.
 
 ## License
 
-This plugin is licensed under the Apache License 2.0. See the [LICENSE](./LICENSE) file for details.
+This plugin is licensed under the MIT. See the [LICENSE](./LICENSE) file for details.
 
 <!-- Optional:
 ## Acknowledgements
