@@ -1,5 +1,5 @@
 {
-  "name": "cloudflare-d1-datasource",
+  "name": "olipayne-cloudflare-d1-datasource",
   "version": "1.0.0",
   "scripts": {
     "build": "webpack -c ./.config/webpack/webpack.config.ts --env production",
