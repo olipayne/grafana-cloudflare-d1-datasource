@@ -1,4 +1,37 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"]
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":assignAndReview(olipayne)",
+    ":rebaseStalePrs",
+    ":preserveSemverRanges",
+    ":semanticCommits"
+  ],
+  "major": {
+    "dependencyDashboardApproval": true
+  },
+  "lockFileMaintenance": {
+    "enabled": true
+  },
+  "timezone": "Europe/Amsterdam",
+  "schedule": [
+    "at any time"
+  ],
+  "packageRules": [
+    {
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "automerge": true
+    },
+    {
+      "matchPackagePatterns": [
+        "^@grafana/"
+      ],
+      "groupName": "grafana packages"
+    }
+  ]
 }
