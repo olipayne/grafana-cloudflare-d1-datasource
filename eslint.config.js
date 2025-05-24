@@ -2,6 +2,7 @@ const grafanaConfig = require('@grafana/eslint-config/flat.js');
 const stylistic = require('@stylistic/eslint-plugin-ts');
 const typescriptParser = require('@typescript-eslint/parser');
 const typescriptPlugin = require('@typescript-eslint/eslint-plugin');
+const reactHooks = require('eslint-plugin-react-hooks');
 
 module.exports = [
   {
@@ -33,13 +34,16 @@ module.exports = [
     },
   },
   {
-    files: ['tests/**/*'],
-    rules: {
-      'react-hooks/rules-of-hooks': 'off',
+    files: ['*.config.js', '.config/**/*.js'],
+    languageOptions: {
+      globals: {
+        module: 'readonly',
+        require: 'readonly',
+        process: 'readonly',
+        __dirname: 'readonly',
+      }
     },
-  },
-  {
-    files: ['*.js', '*.cjs', '*.mjs'],
-    rules: {},
+    rules: {
+    }
   },
 ];
