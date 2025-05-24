@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"reflect"
-	"sort"
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
@@ -98,7 +97,7 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 
 	log.DefaultLogger.Debug("Executing D1 query", "QueryText", qm.QueryText, "AccountID", d.settings.AccountID)
 
-	apiURL := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/d1/database/%s/query",
+	apiURL := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/d1/database/%s/raw",
 		d.settings.AccountID, d.settings.DatabaseID)
 
 	queryPayload := models.D1QueryRequest{SQL: qm.QueryText}
@@ -137,10 +136,10 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 		return dataResponse
 	}
 
-	var d1Response models.D1APIResponse
+	var d1Response models.D1RawAPIResponse
 	if err := json.Unmarshal(bodyBytes, &d1Response); err != nil {
-		log.DefaultLogger.Error("Error unmarshalling D1 response", "error", err, "body", string(bodyBytes))
-		dataResponse.Error = fmt.Errorf("error unmarshalling D1 API response: %w. Body: %s", err, string(bodyBytes))
+		log.DefaultLogger.Error("Error unmarshalling D1 raw response", "error", err, "body", string(bodyBytes))
+		dataResponse.Error = fmt.Errorf("error unmarshalling D1 API raw response: %w. Body: %s", err, string(bodyBytes))
 		return dataResponse
 	}
 
@@ -158,51 +157,73 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 	// Create a new DataFrame. The RefID from the query is used to link this Frame back to the specific query panel in Grafana.
 	frame := data.NewFrame(query.RefID)
 
-	// Check if the D1 response contains any result sets or any rows in the first result set.
-	if len(d1Response.Result) == 0 || len(d1Response.Result[0].Results) == 0 {
-		log.DefaultLogger.Debug("D1 query returned no results", "QueryText", qm.QueryText)
-		// If no data, append a notice to the frame and return. Grafana will display this notice.
-		frame.AppendNotices(data.Notice{Severity: data.NoticeSeverityInfo, Text: "Query returned no data."}) 
+	// Check if the D1 response contains any result sets or any actual results in the first result item.
+	if len(d1Response.Result) == 0 || d1Response.Result[0].Results == nil || len(d1Response.Result[0].Results.Rows) == 0 {
+		// Also check if there are no columns, which can happen for DDL or empty results from `SELECT`s that genuinely return no rows.
+		if len(d1Response.Result) > 0 && d1Response.Result[0].Results != nil && len(d1Response.Result[0].Results.Columns) == 0 && len(d1Response.Result[0].Results.Rows) == 0 {
+			// This case could be a successful DDL query (like CREATE TABLE) which returns no columns/rows
+			// or a SELECT that returns no rows AND no columns (less common).
+			if d1Response.Result[0].Success {
+				frame.AppendNotices(data.Notice{Severity: data.NoticeSeverityInfo, Text: "Query executed successfully, no data returned (e.g., DDL statement)."})
+			} else {
+				// If not successful, it might be an error that didn't get caught by d1Response.Success check earlier.
+				log.DefaultLogger.Debug("D1 query returned no results or an error in the result item", "QueryText", qm.QueryText)
+				frame.AppendNotices(data.Notice{Severity: data.NoticeSeverityWarning, Text: "Query returned no data or an error occurred in the result processing."})
+			}
+		} else {
+			log.DefaultLogger.Debug("D1 query returned no result rows", "QueryText", qm.QueryText)
+			frame.AppendNotices(data.Notice{Severity: data.NoticeSeverityInfo, Text: "Query returned no data."}) 
+		}
 		dataResponse.Frames = append(dataResponse.Frames, frame)
 		return dataResponse
 	}
 
-	// Get the actual query results (rows) from the D1 response.
-	// We assume a single result set from D1, as batch queries are not explicitly handled here.
-	d1Results := d1Response.Result[0].Results
-	rowCount := len(d1Results)
+	// Get the actual query results from the D1 /raw response.
+	// We assume a single SQL statement in the query, so we take the first result item.
+	d1RawActualResults := d1Response.Result[0].Results
+	colNames := d1RawActualResults.Columns
+	d1Rows := d1RawActualResults.Rows
+	rowCount := len(d1Rows)
+
+	// If colNames is empty but we have rows, something is wrong (shouldn't happen with /raw)
+	if len(colNames) == 0 && rowCount > 0 {
+		dataResponse.Error = fmt.Errorf("D1 /raw response has rows but no column names")
+		return dataResponse
+	}
 
 	// Determine column names and their order.
-	// D1 returns results as []map[string]interface{}, where keys in the map are column names.
-	// Map iteration order in Go is not guaranteed. To ensure consistent column order in Grafana,
-	// we extract all column names from the first row and then sort them alphabetically.
-	// A more ideal solution would be if D1 provided ordered column metadata.
-	firstRow := d1Results[0]
-	colNames := make([]string, 0, len(firstRow))
-	for k := range firstRow {
-		colNames = append(colNames, k)
-	}
-	sort.Strings(colNames) // Sort column names alphabetically for consistent order.
+	// D1 /raw endpoint returns an ordered list of column names, so no sorting is needed.
+	// This directly addresses the column ordering issue.
+	// firstRow := d1Results[0] // Not needed anymore
+	// colNames := make([]string, 0, len(firstRow)) // Not needed anymore
+	// for k := range firstRow { // Not needed anymore
+	// 	colNames = append(colNames, k)
+	// }
+	// sort.Strings(colNames) // REMOVED: No longer sort column names alphabetically.
 
 	// Create data fields for the DataFrame.
-	// Each field corresponds to a column in the query result.
-	for _, colName := range colNames {
-		// Infer the data type for the column based on the value in the first row.
+	// Each field corresponds to a column in the query result, using the order from d1RawActualResults.Columns.
+	for colIdx, colName := range colNames {
+		// Infer the data type for the column based on the value in the first row for this column.
 		// This is a simplification; a more robust system might inspect multiple rows
 		// or allow user-defined type mappings, especially for types like timestamps.
 		var field *data.Field
-		sampleValue := firstRow[colName]
+		var sampleValue interface{}
+		if rowCount > 0 && colIdx < len(d1Rows[0]) {
+			sampleValue = d1Rows[0][colIdx]
+		}
 
 		// Switch on the type of the sample value from the first row to create a typed Field vector.
 		switch v := sampleValue.(type) {
 		case float64: // JSON numbers are typically unmarshalled as float64 by encoding/json
 			log.DefaultLogger.Debug("Column type inference", "column", colName, "type", "float64")
-			// Create a slice of nullable float64s to hold data for this column.
 			colData := make([]*float64, rowCount)
-			for i, row := range d1Results { // Populate the slice from all rows
-				if val, ok := row[colName]; ok && val != nil {
-					if fVal, fOk := val.(float64); fOk { // Type assert and assign if not nil
-						colData[i] = &fVal
+			for i, row := range d1Rows { // Populate the slice from all rows
+				if colIdx < len(row) {
+					if val := row[colIdx]; val != nil {
+						if fVal, fOk := val.(float64); fOk { // Type assert and assign if not nil
+							colData[i] = &fVal
+						}
 					}
 				}
 			}
@@ -210,16 +231,16 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 		case string:
 			log.DefaultLogger.Debug("Column type inference", "column", colName, "type", "string")
 			// Attempt to parse string values as time.Time if they match RFC3339Nano.
-			// This is a common timestamp format. More sophisticated parsing or user configuration
-			// might be needed for other timestamp formats D1 might return.
 			if _, e := time.Parse(time.RFC3339Nano, v); e == nil { // Check if first value parses as time
 				log.DefaultLogger.Debug("Column type inference", "column", colName, "detected_type", "time.Time from string")
 				colData := make([]*time.Time, rowCount)
-				for i, row := range d1Results {
-					if val, ok := row[colName]; ok && val != nil {
-						if sVal, sOk := val.(string); sOk {
-							if tVal, errT := time.Parse(time.RFC3339Nano, sVal); errT == nil {
-								colData[i] = &tVal
+				for i, row := range d1Rows {
+					if colIdx < len(row) {
+						if val := row[colIdx]; val != nil {
+							if sVal, sOk := val.(string); sOk {
+								if tVal, errT := time.Parse(time.RFC3339Nano, sVal); errT == nil {
+									colData[i] = &tVal
+								}
 							}
 						}
 					}
@@ -227,10 +248,12 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 				field = data.NewField(colName, nil, colData)
 			} else { // If not a parsable time string, treat as a regular string.
 				colData := make([]*string, rowCount)
-				for i, row := range d1Results {
-					if val, ok := row[colName]; ok && val != nil {
-						if sVal, sOk := val.(string); sOk {
-							colData[i] = &sVal
+				for i, row := range d1Rows {
+					if colIdx < len(row) {
+						if val := row[colIdx]; val != nil {
+							if sVal, sOk := val.(string); sOk {
+								colData[i] = &sVal
+							}
 						}
 					}
 				}
@@ -239,38 +262,52 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 		case bool:
 			log.DefaultLogger.Debug("Column type inference", "column", colName, "type", "bool")
 			colData := make([]*bool, rowCount)
-			for i, row := range d1Results {
-				if val, ok := row[colName]; ok && val != nil {
-					if bVal, bOk := val.(bool); bOk {
-						colData[i] = &bVal
+			for i, row := range d1Rows {
+				if colIdx < len(row) {
+					if val := row[colIdx]; val != nil {
+						if bVal, bOk := val.(bool); bOk {
+							colData[i] = &bVal
+						}
 					}
 				}
 			}
 			field = data.NewField(colName, nil, colData)
-		case nil: // If the sample value (from the first row) is nil.
-			// We cannot infer the type. Default to string for this column.
-			// This could be an issue if subsequent rows have a non-string type (e.g. number).
-			log.DefaultLogger.Debug("Column type inference", "column", colName, "type", "nil in first row, defaulting to string")
-			colData := make([]*string, rowCount)
-			for i, row := range d1Results {
-				if val, ok := row[colName]; ok && val != nil { // Process non-nil values if they appear later
-					// Attempt to convert to string. This might not be ideal if other types appear.
-					colData[i] = ptrToString(fmt.Sprintf("%v", val))
-				} 
+		case nil: // If the sample value (from the first row for this column) is nil.
+			// We need to try to infer from other rows or default to string. For now, default to string if all are nil.
+			// This part of type inference could be more robust.
+			log.DefaultLogger.Debug("Column type inference", "column", colName, "type", "nil_sample, defaulting to string")
+			colData := make([]*string, rowCount) // Defaulting to string for nil-sampled columns
+			// Attempt to populate with actual string values if present in other rows, though type is fixed by sample.
+			for i, row := range d1Rows {
+				if colIdx < len(row) {
+					if val := row[colIdx]; val != nil {
+						if sVal, sOk := val.(string); sOk {
+							colData[i] = &sVal
+						} else {
+							// If it's not nil and not a string, convert to string representation for this default case
+							tempStr := fmt.Sprintf("%v", val)
+							colData[i] = &tempStr
+						}
+					}
+				}
 			}
 			field = data.NewField(colName, nil, colData)
-		default: // Fallback for any other types not explicitly handled.
-			// Convert to string. This ensures data is displayed but might lose original typing.
-			log.DefaultLogger.Debug("Column type inference", "column", colName, "type", "unknown, defaulting to string", "actual_type", reflect.TypeOf(sampleValue))
+
+		default:
+			log.DefaultLogger.Debug("Column type inference", "column", colName, "type", "unknown, defaulting to string", "actual_type", reflect.TypeOf(v))
+			// For any other types, or if type inference is tricky, default to string.
+			// This ensures data is at least displayed, though maybe not optimally typed.
 			colData := make([]*string, rowCount)
-			for i, row := range d1Results {
-				if val, ok := row[colName]; ok && val != nil {
-					colData[i] = ptrToString(fmt.Sprintf("%v", val))
+			for i, row := range d1Rows {
+				if colIdx < len(row) {
+					if val := row[colIdx]; val != nil {
+						tempStr := fmt.Sprintf("%v", val) // Convert value to string representation
+						colData[i] = &tempStr
+					}
 				}
 			}
 			field = data.NewField(colName, nil, colData)
 		}
-		// Add the newly created and populated field to the DataFrame.
 		frame.Fields = append(frame.Fields, field)
 	}
 
