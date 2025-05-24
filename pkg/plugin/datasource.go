@@ -229,24 +229,60 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 			}
 			field = data.NewField(colName, nil, colData)
 		case string:
-			log.DefaultLogger.Debug("Column type inference", "column", colName, "type", "string")
-			// Attempt to parse string values as time.Time if they match RFC3339Nano.
-			if _, e := time.Parse(time.RFC3339Nano, v); e == nil { // Check if first value parses as time
-				log.DefaultLogger.Debug("Column type inference", "column", colName, "detected_type", "time.Time from string")
+			log.DefaultLogger.Debug("Column type inference", "column", colName, "type", "string_from_json")
+			// Define the expected D1/SQLite timestamp format
+			// (YYYY-MM-DD HH:MM:SS commonly returned by SQLite CURRENT_TIMESTAMP)
+			const d1TimestampLayout = "2006-01-02 15:04:05" // Go's reference time format
+
+			// Attempt to parse string values as time.Time
+			// Try D1/SQLite common format first, then RFC3339Nano as a fallback.
+			parsedAsTime := false
+			var errParseCheck error
+
+			// Try parsing with d1TimestampLayout
+			if _, errParseCheck = time.Parse(d1TimestampLayout, v); errParseCheck == nil {
+				parsedAsTime = true
+				log.DefaultLogger.Debug("Column type inference: parsed as D1 format", "column", colName, "value", v)
+			} else {
+				// If D1 format fails, try RFC3339Nano (existing behavior)
+				if _, errParseCheck = time.Parse(time.RFC3339Nano, v); errParseCheck == nil {
+					parsedAsTime = true
+					log.DefaultLogger.Debug("Column type inference: parsed as RFC3339Nano", "column", colName, "value", v)
+				}
+			}
+
+			if parsedAsTime {
+				log.DefaultLogger.Debug("Column type inference: creating time.Time field", "column", colName)
 				colData := make([]*time.Time, rowCount)
 				for i, row := range d1Rows {
 					if colIdx < len(row) {
 						if val := row[colIdx]; val != nil {
 							if sVal, sOk := val.(string); sOk {
-								if tVal, errT := time.Parse(time.RFC3339Nano, sVal); errT == nil {
-									colData[i] = &tVal
+								var tValRow time.Time
+								var errParseRow error
+								// Try parsing again with the determined successful layout or both
+								if t, err := time.Parse(d1TimestampLayout, sVal); err == nil {
+									tValRow = t
+									errParseRow = nil
+								} else if t, err := time.Parse(time.RFC3339Nano, sVal); err == nil {
+									tValRow = t
+									errParseRow = nil
+								} else {
+									errParseRow = err // Store the last error
+								}
+
+								if errParseRow == nil {
+									colData[i] = &tValRow
+								} else {
+									log.DefaultLogger.Warn("Failed to parse time string in row, leaving as nil", "column", colName, "row_index", i, "value", sVal, "error", errParseRow)
 								}
 							}
 						}
 					}
 				}
 				field = data.NewField(colName, nil, colData)
-			} else { // If not a parsable time string, treat as a regular string.
+			} else { // If not a parsable time string by any supported format, treat as a regular string.
+				log.DefaultLogger.Debug("Column type inference: treating as regular string", "column", colName, "value", v)
 				colData := make([]*string, rowCount)
 				for i, row := range d1Rows {
 					if colIdx < len(row) {
