@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/grafana/grafana/main/docs/sources/developers/plugins/plugin.schema.json",
   "type": "datasource",
   "name": "Cloudflare D1",
-  "id": "olipayne-cloudflare-d1-datasource",
+  "id": "olipayne-d1-datasource",
   "metrics": true,
   "backend": true,
   "executable": "gpx_cloudflare_d1_datasource",

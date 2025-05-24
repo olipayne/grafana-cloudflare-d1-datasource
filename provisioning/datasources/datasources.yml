@@ -2,7 +2,7 @@ apiVersion: 1
 
 datasources:
   - name: 'Cloudflare D1'
-    type: 'olipayne-cloudflare-d1-datasource'
+    type: 'olipayne-d1-datasource'
     access: proxy
     isDefault: false
     orgId: 1
