@@ -14,24 +14,15 @@
     "enabled": true
   },
   "timezone": "Europe/Amsterdam",
-  "schedule": [
-    "at any time"
-  ],
+  "schedule": ["at any time"],
   "packageRules": [
     {
-      "matchUpdateTypes": [
-        "minor",
-        "patch",
-        "pin",
-        "digest"
-      ],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "automerge": true
     },
     {
-      "matchPackagePatterns": [
-        "^@grafana/"
-      ],
-      "groupName": "grafana packages"
+      "groupName": "grafana packages",
+      "matchPackageNames": ["/^@grafana//"]
     }
   ]
 }
