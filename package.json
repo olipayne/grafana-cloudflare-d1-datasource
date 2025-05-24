@@ -34,7 +34,7 @@
     "copy-webpack-plugin": "^13.0.0",
     "css-loader": "^7.0.0",
     "eslint": "^9.0.0",
-    "eslint-config-prettier": "^9.0.0",
+    "eslint-config-prettier": "^10.0.0",
     "eslint-plugin-jsdoc": "^48.0.0",
     "eslint-plugin-react": "^7.33.0",
     "eslint-plugin-react-hooks": "^5.2.0",
