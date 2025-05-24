@@ -32,24 +32,31 @@ This plugin allows Grafana to connect to [Cloudflare D1](https://developers.clou
 
     - **Account ID:**
       1.  Log in to your Cloudflare dashboard.
-      2.  Navigate to "Workers & Pages".
-      3.  Your Account ID is typically found in the URL (e.g., `https://dash.cloudflare.com/{account_id}/...`) or on the right sidebar under "Account ID".
-      <!-- TODO: User to verify and add more precise instructions or link to CF docs -->
+      2.  Navigate to "Workers & Pages" on the left sidebar.
+      3.  Your **Account ID** is displayed in the "Account details" section on the right sidebar. You can click "Click to copy".
+      4.  Alternatively, refer to the [official Cloudflare documentation to find your Account ID](https://developers.cloudflare.com/fundamentals/setup/find-account-and-zone-ids/).
     - **Database ID:**
-      1.  In the Cloudflare dashboard, go to "Workers & Pages" -> "D1".
-      2.  Select your desired D1 database.
-      3.  The Database ID is usually displayed prominently on the database\'s overview page. It might be referred to as "Database ID" or similar.
-      <!-- TODO: User to verify and add more precise instructions or link to CF docs -->
+      1.  In the Cloudflare dashboard, navigate to "Workers & Pages" -> "D1".
+      2.  Select your desired D1 database from the list.
+      3.  The **Database ID (UUID)** is a long alphanumeric string and will be displayed on the database's overview page, typically labeled as "ID".
+      4.  For more details on D1, you can visit the [Cloudflare D1 documentation](https://developers.cloudflare.com/d1/).
     - **API Token:**
-      1.  In the Cloudflare dashboard, go to "My Profile" (top right) -> "API Tokens".
+      1.  In the Cloudflare dashboard, go to "My Profile" (top right icon) -> "API Tokens".
       2.  Click "Create Token".
-      3.  You can start with the "Edit Cloudflare Workers" template or create a custom token.
-      4.  Ensure the token has at least the following permissions:
-          - **Account Resources:** `D1`: `Read` (This grants read access to all D1 databases in the account. You might want to create more scoped tokens if Cloudflare allows it in the future for specific D1 DBs).
+      3.  It is recommended to use a "Custom token". Click "Get started" under Custom token.
+      4.  Give your token a descriptive name (e.g., "Grafana D1 ReadOnly Access").
+      5.  Under "Permissions", configure the following:
+          - Select `Account` for the resource group.
+          - Select `D1` for the specific resource.
+          - Select `Read` for the permission level.
+          This grants read access to all D1 databases within the account(s) this token is scoped to.
+      6.  Under "Account Resources", you can typically leave it as `Include` -> `All accounts` if your user has access to multiple accounts and you want the token to work for any of them where D1 is used. The `D1 Read` permission itself is tied to the D1 service within an account.
           <!-- TODO: User to verify exact minimum permissions. CF docs on D1 API auth would be helpful. -->
-      5.  Give your token a descriptive name.
-      6.  Click "Continue to summary" and then "Create Token".
-      7.  **Important:** Copy the generated API token immediately. You will not be able to see it again.
+      7.  You can optionally restrict the token by IP address or TTL.
+      8.  Click "Continue to summary".
+      9.  Review the permissions and click "Create Token".
+      10. **Important:** Copy the generated API token immediately. You will not be able to see it again.
+      11. For more details on creating API tokens, refer to the [Cloudflare API token creation guide](https://developers.cloudflare.com/fundamentals/api/get-started/create-token/).
 
 3.  **Add Data Source in Grafana:**
     1.  In Grafana, go to "Connections" (or "Configuration" in older versions) -> "Data sources".
@@ -122,42 +129,4 @@ This plugin allows Grafana to connect to [Cloudflare D1](https://developers.clou
 
 5.  **Run Grafana with Plugin Locally:**
     - Ensure `npm run dev` is running in one terminal.
-    - Ensure your backend binary (e.g., `dist/gpx_cloudflare_d1_datasource_linux_arm64` if your Docker runs Linux/ARM64) is built and matches the architecture expected by the Docker container (see `Dockerfile` `TARGETARCH`).
-    - In another terminal, start Grafana using Docker Compose:
-      ```bash
-      docker compose up
-      ```
-    - Access Grafana at `http://localhost:3000` (admin/admin).
-    - The plugin will be available. The `docker-compose.yaml` volume mounts the `dist` directory, so backend changes require a rebuild and then a Grafana restart (or Docker Compose restart) for Grafana to pick up the new backend binary. Frontend changes from `npm run dev` are usually picked up with a browser refresh.
-
-## Troubleshooting
-
-- **"Plugin not found" in Grafana logs / UI:**
-  - Ensure the plugin `dist` directory is correctly placed in your Grafana plugins directory and Grafana was restarted.
-  - Verify the plugin ID in `src/plugin.json` matches what Grafana expects.
-  - Check Grafana server logs for more detailed errors.
-- **"Plugin failed to start" (when clicking on the data source settings or a panel):**
-  - This usually indicates an issue with the backend plugin binary.
-  - **Architecture Mismatch:** Ensure the Go backend binary in the `dist` folder (e.g., `gpx_cloudflare_d1_datasource_linux_arm64`) matches the architecture of the Grafana server environment (or the Docker container running Grafana). If you built `darwinARM64` but your Docker Grafana is `linux/amd64`, it won\'t work. Rebuild for the correct architecture.
-  - Check Grafana server logs for errors like "fork/exec ...: exec format error" (architecture mismatch) or other Go runtime errors.
-- **"API key not valid" or Authentication Errors:**
-  - Double-check your API Token, Account ID, and Database ID in the data source configuration.
-  - Ensure your API Token has the correct permissions for D1 access.
-  - Test the API token directly using `curl` against the D1 API if issues persist.
-- **Data Source "Save & Test" works, but queries fail or show no data:**
-  - Verify your SQL query syntax is correct for D1 (SQLite).
-  - Check Grafana panel inspector for any error messages returned by the data source.
-  - Enable debug logging in Grafana and check the Grafana server logs for detailed logs from the plugin.
-
-## Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request.
-
-## License
-
-This plugin is licensed under the MIT. See the [LICENSE](./LICENSE) file for details.
-
-<!-- Optional:
-## Acknowledgements
-* ...
--->
+    - Ensure your backend binary (e.g., `dist/gpx_cloudflare_d1_datasource_linux_arm64` if your Docker runs Linux/ARM64) is built and matches the architecture expected by the Docker container (see `Dockerfile` `TARGETARCH`
