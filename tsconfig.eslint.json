@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/**/*",
+    "tests/**/*.ts",
+    "playwright.config.ts",
+    "*.config.ts", // For eslint.config.ts if it existed, or other *.config.ts files
+    ".config/jest.config.ts", // If jest config is TS
+    ".config/webpack/**/*.ts" // If webpack config is TS
+    // Add any other TS files/patterns that need linting with type info
+  ],
+  "exclude": ["node_modules", "dist"]
+}

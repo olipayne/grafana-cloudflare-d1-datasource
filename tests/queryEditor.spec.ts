@@ -17,7 +17,7 @@ test('smoke: should render query editor', async ({ panelEditPage, readProvisione
 //   const queryReq = panelEditPage.waitForQueryDataRequest();
 //   // Assuming there was a field tied to 'Constant' that would trigger a change.
 //   // Since it's removed, this part of the test is no longer applicable.
-//   // await panelEditPage.getQueryEditorRow('A').getByRole('spinbutton').fill('10'); 
+//   // await panelEditPage.getQueryEditorRow('A').getByRole('spinbutton').fill('10');
 //   // await expect(await queryReq).toBeTruthy();
 // });
 

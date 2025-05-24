@@ -11,13 +11,7 @@
     "author": {
       "name": "Oliver Payne"
     },
-    "keywords": [
-      "datasource",
-      "cloudflare",
-      "d1",
-      "serverless",
-      "database"
-    ],
+    "keywords": ["datasource", "cloudflare", "d1", "serverless", "database"],
     "logos": {
       "small": "img/logo.svg",
       "large": "img/logo.svg"

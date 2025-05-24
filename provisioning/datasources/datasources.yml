@@ -8,13 +8,8 @@ datasources:
     orgId: 1
     version: 1
     editable: true
-    jsonData: {
-      "accountId": "test-account-id",
-      "databaseId": "test-database-id"
-    }
-    secureJsonData: {
-      "apiToken": "test-api-token"
-    }
+    jsonData: { 'accountId': 'test-account-id', 'databaseId': 'test-database-id' }
+    secureJsonData: { 'apiToken': 'test-api-token' }
     # Secure JSON data (like API Token) should be configured
     # manually in the Grafana UI for the development environment,
     # or provisioned via environment variables for production setups.
