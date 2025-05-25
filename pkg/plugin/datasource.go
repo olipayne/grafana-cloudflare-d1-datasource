@@ -14,6 +14,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
+	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
 	"github.com/olipayne/grafana-cloudflare-d1-datasource/pkg/models"
 )
 
@@ -79,10 +80,13 @@ func (d *Datasource) QueryData(ctx context.Context, req *backend.QueryDataReques
 // type queryModel struct{}
 
 func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {
+	log.DefaultLogger.Info("Cloudflare D1 Plugin: query function invoked", "RefID", query.RefID, "PluginVersion", "1.0.1-dev-macro-test") // Test log
 	dataResponse := backend.DataResponse{}
 
 	var qm struct {
 		QueryText string `json:"queryText"`
+		// We might need other fields from the query model in the future,
+		// for example, to pass to sqlutil.Interpolate if needed for other macros.
 	}
 
 	if err := json.Unmarshal(query.JSON, &qm); err != nil {
@@ -95,12 +99,26 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 		return dataResponse
 	}
 
-	log.DefaultLogger.Debug("Executing D1 query", "QueryText", qm.QueryText, "AccountID", d.settings.AccountID)
+	// Create a sqlutil.Query object for macro interpolation
+	sqlQuery := sqlutil.Query{
+		RawSQL:    qm.QueryText,
+		TimeRange: query.TimeRange,
+		Interval:  query.Interval,
+	}
+
+	// Interpolate Grafana macros
+	interpolatedQuery, err := sqlutil.Interpolate(&sqlQuery, sqlutil.DefaultMacros)
+	if err != nil {
+		dataResponse.Error = fmt.Errorf("error interpolating query: %w", err)
+		return dataResponse
+	}
+
+	log.DefaultLogger.Debug("Executing D1 query", "InterpolatedQueryText", interpolatedQuery, "AccountID", d.settings.AccountID)
 
 	apiURL := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/d1/database/%s/raw",
 		d.settings.AccountID, d.settings.DatabaseID)
 
-	queryPayload := models.D1QueryRequest{SQL: qm.QueryText}
+	queryPayload := models.D1QueryRequest{SQL: interpolatedQuery}
 	jsonBody, err := json.Marshal(queryPayload)
 	if err != nil {
 		dataResponse.Error = fmt.Errorf("error marshalling D1 query payload: %w", err)
