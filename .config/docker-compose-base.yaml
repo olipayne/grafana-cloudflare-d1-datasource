@@ -1,13 +1,13 @@
 services:
   grafana:
     user: root
-    container_name: 'cloudflare-cloudflared1-datasource'
+    container_name: 'olipayne-d1-datasource'
 
     build:
       context: .
       args:
         grafana_image: ${GRAFANA_IMAGE:-grafana-enterprise}
-        grafana_version: ${GRAFANA_VERSION:-11.5.3}
+        grafana_version: ${GRAFANA_VERSION:-12.1.0}
         development: ${DEVELOPMENT:-false}
         anonymous_auth_enabled: ${ANONYMOUS_AUTH_ENABLED:-true}
     ports:
@@ -19,13 +19,13 @@ services:
     cap_add:
       - SYS_PTRACE
     volumes:
-      - ../dist:/var/lib/grafana/plugins/cloudflare-cloudflared1-datasource
+      - ../dist:/var/lib/grafana/plugins/olipayne-d1-datasource
       - ../provisioning:/etc/grafana/provisioning
-      - ..:/root/cloudflare-cloudflared1-datasource
+      - ..:/root/olipayne-d1-datasource
 
     environment:
       NODE_ENV: development
-      GF_LOG_FILTERS: plugin.cloudflare-cloudflared1-datasource:debug
+      GF_LOG_FILTERS: plugin.olipayne-d1-datasource:debug
       GF_LOG_LEVEL: debug
       GF_DATAPROXY_LOGGING: 1
-      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: cloudflare-cloudflared1-datasource
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: olipayne-d1-datasource
