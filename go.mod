@@ -2,7 +2,7 @@ module github.com/olipayne/grafana-cloudflare-d1-datasource
 
 go 1.24.6
 
-toolchain go1.25.0
+toolchain go1.25.1
 
 require github.com/grafana/grafana-plugin-sdk-go v0.279.0
 
