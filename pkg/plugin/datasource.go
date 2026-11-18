@@ -79,7 +79,7 @@ func (d *Datasource) QueryData(ctx context.Context, req *backend.QueryDataReques
 // For now, we use a local qm struct inside the query method.
 // type queryModel struct{}
 
-func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {
+func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {
 	log.DefaultLogger.Info("Cloudflare D1 Plugin: query function invoked", "RefID", query.RefID, "PluginVersion", "1.0.1-dev-macro-test") // Test log
 	dataResponse := backend.DataResponse{}
 
@@ -126,7 +126,7 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 	}
 
 	httpClient := &http.Client{Timeout: 10 * time.Second}
-	httpReq, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonBody))
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewBuffer(jsonBody))
 	if err != nil {
 		dataResponse.Error = fmt.Errorf("error creating HTTP request for D1: %w", err)
 		return dataResponse
@@ -379,7 +379,7 @@ func ptrToString(s string) *string {
 // The main use case for these health checks is the test button on the
 // datasource configuration page which allows users to verify that
 // a datasource is working as expected.
-func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
+func (d *Datasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
 	log.DefaultLogger.Info("Checking health", "AccountID", d.settings.AccountID)
 
 	var status = backend.HealthStatusOk
@@ -412,7 +412,7 @@ func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequ
 
 	// Create HTTP client and request
 	httpClient := &http.Client{Timeout: 10 * time.Second}
-	httpReq, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonBody))
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return &backend.CheckHealthResult{
 			Status:  backend.HealthStatusError,
