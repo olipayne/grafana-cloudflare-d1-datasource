@@ -5,15 +5,23 @@ jobs:
   compatibilitycheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Setup Node.js environment
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '22'
+          node-version-file: '.nvmrc'
           cache: 'npm'
+
+      - name: Use the declared npm version
+        run: npm install --global "$(node -p 'require("./package.json").packageManager')"
       - name: Install dependencies
         run: npm ci
       - name: Build plugin
         run: npm run build
       - name: Compatibility check
-        run: npx --yes @grafana/levitate@latest is-compatible --path $(find ./src -type f \( -name "module.ts" -o -name "module.tsx" \)) --target @grafana/data,@grafana/ui,@grafana/runtime
+        # Levitate 0.18 expects the object returned by npm 11's "view --json".
+        # npm 12 returns an array. Scope npm 11 to this checker only.
+        run: >
+          npm exec --yes --package=npm@11.21.3 --package=@grafana/levitate@0.18.1 --
+          levitate is-compatible --path ./src/module.ts
+          --target @grafana/data,@grafana/ui,@grafana/runtime
