@@ -2,6 +2,7 @@
 
 ## [1.0.6](https://github.com/olipayne/grafana-cloudflare-d1-datasource/compare/v1.0.5...v1.0.6) (2026-11-18)
 
+The Cloudflare D1 query and configuration editors now have verified browser coverage on Grafana 10.4 through 13.3 and nightly. The plugin uses Grafana frontend SDK 13.3.1 and backend SDK 0.300.0. [#124](https://github.com/olipayne/grafana-cloudflare-d1-datasource/pull/124)
 
 ### Bug Fixes
 
