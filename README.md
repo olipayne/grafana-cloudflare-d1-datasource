@@ -1,7 +1,7 @@
 # Cloudflare D1 Grafana Datasource
 
 [![Release](https://img.shields.io/github/v/release/olipayne/grafana-cloudflare-d1-datasource?style=flat-square)](https://github.com/olipayne/grafana-cloudflare-d1-datasource/releases/latest)
-[![Software License](https://img.shields.io/badge/license-Apache2-brightgreen.svg?style=flat-square)](LICENSE)
+[![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE)
 
 <!-- Add other badges as appropriate: build status, etc. -->
 
@@ -16,7 +16,7 @@ This plugin allows Grafana to connect to [Cloudflare D1](https://developers.clou
 
 ## Requirements
 
-- Grafana 9.x or later (Please update if a different version is targeted by the SDK used).
+- Grafana 10.4.0 or later.
 - A Cloudflare account with a D1 database.
 - A Cloudflare API Token with permissions to read the D1 database.
 
@@ -24,7 +24,7 @@ This plugin allows Grafana to connect to [Cloudflare D1](https://developers.clou
 
 1.  **Install the Plugin:**
 
-    - **From Release (Recommended for users):** Download the latest release `zip` file from the [Releases page](https://github.com/olipayne/grafana-cloudflare-d1-datasource/releases) (replace with actual link once you have one). Unzip it into your Grafana plugin directory (e.g., `/var/lib/grafana/plugins` on Linux, or `data/plugins` relative to your Grafana install).
+    - **From Release (Recommended for users):** Download the latest release `zip` file from the [Releases page](https://github.com/olipayne/grafana-cloudflare-d1-datasource/releases). Unzip it into your Grafana plugin directory (e.g., `/var/lib/grafana/plugins` on Linux, or `data/plugins` relative to your Grafana install).
     - **Manual Build (For developers):** See the [Development](#development) section.
     - Restart your Grafana server after installing the plugin.
 
@@ -99,8 +99,8 @@ This plugin allows Grafana to connect to [Cloudflare D1](https://developers.clou
 
 1.  **Prerequisites:**
 
-    - [Node.js](https://nodejs.org/) (LTS version recommended)
-    - [Go](https://golang.org/doc/install) (version specified in `Dockerfile` or `go.mod`)
+    - [Node.js](https://nodejs.org/) 26 LTS and the npm version specified in `package.json`
+    - [Go](https://golang.org/doc/install) (version specified in `go.mod`)
     - [Mage](https://magefile.org/) (Go build tool): `go install github.com/magefile/mage@latest`
     - [Docker](https://www.docker.com/) & Docker Compose (for running Grafana locally)
 
@@ -113,7 +113,7 @@ This plugin allows Grafana to connect to [Cloudflare D1](https://developers.clou
 
 3.  **Install Dependencies:**
 
-    - Frontend: `npm install`
+    - Frontend: `npm install --global "$(node -p 'require("./package.json").packageManager')"`, then `npm ci`
     - Backend: `go mod tidy` (should already be tidy)
 
 4.  **Build Plugin:**
@@ -129,4 +129,5 @@ This plugin allows Grafana to connect to [Cloudflare D1](https://developers.clou
 
 5.  **Run Grafana with Plugin Locally:**
     - Ensure `npm run dev` is running in one terminal.
-    - Ensure your backend binary (e.g., `dist/gpx_cloudflare_d1_datasource_linux_arm64` if your Docker runs Linux/ARM64) is built and matches the architecture expected by the Docker container (see `Dockerfile` `TARGETARCH`
+    - Build the backend binary for your Docker architecture, then run `npm run server`.
+    - Open http://localhost:3000. The provisioned Cloudflare D1 datasource uses dummy credentials for smoke tests. Configure your own datasource to run live queries.
