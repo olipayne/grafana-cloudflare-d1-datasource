@@ -1,0 +1,123 @@
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/release-please.yml
+      - release-please-config.json
+      - .release-please-manifest.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-please-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    outputs:
+      created: ${{ steps.release.outputs.release_created }}
+      tag: ${{ steps.release.outputs.tag_name }}
+      sha: ${{ steps.release.outputs.sha }}
+    steps:
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  package:
+    name: Package Grafana plugin
+    needs: release
+    if: >-
+      !cancelled() &&
+      (github.event_name == 'pull_request' || needs.release.outputs.created == 'true')
+    runs-on: ubuntu-latest
+    outputs:
+      archive: ${{ steps.package.outputs.archive }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.release.outputs.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Read project toolchain and check release version
+        id: versions
+        env:
+          TAG: ${{ needs.release.outputs.tag }}
+        run: |
+          version=$(jq -er .version package.json)
+          jq -e --arg v "$version" '.["."] == $v' .release-please-manifest.json
+          jq -e --arg v "$version" '.version == $v and .packages[""].version == $v' package-lock.json
+          if [[ -n "$TAG" ]]; then test "$TAG" = "v$version"; fi
+          echo "node=$(cat .nvmrc)" >> "$GITHUB_OUTPUT"
+          echo "go=$(awk '$1 == "go" {print $2}' go.mod)" >> "$GITHUB_OUTPUT"
+
+      - name: Build and validate the release archive
+        id: package
+        uses: grafana/plugin-actions/package-plugin@7b803f9b4b9ce12bff247bfec7dbb7e2d9124601 # package-plugin/v2.0.3
+        with:
+          node-version: ${{ steps.versions.outputs.node }}
+          go-version: ${{ steps.versions.outputs.go }}
+          policy_token: ${{ github.event_name != 'pull_request' && secrets.GRAFANA_ACCESS_POLICY_TOKEN || '' }}
+
+      - name: Verify archive metadata and checksum
+        env:
+          ARCHIVE: ${{ steps.package.outputs.archive }}
+          CHECKSUM: ${{ steps.package.outputs.archive-sha1sum }}
+          PLUGIN_ID: ${{ steps.package.outputs.plugin-id }}
+        run: |
+          version=$(jq -er .version package.json)
+          test "$ARCHIVE" = "$PLUGIN_ID-$version.zip"
+          unzip -p "$ARCHIVE" "$PLUGIN_ID/plugin.json" |
+            jq -e --arg id "$PLUGIN_ID" --arg v "$version" '.id == $id and .info.version == $v'
+          test "$CHECKSUM" = "$ARCHIVE.sha1"
+          test "$(cat "$CHECKSUM")" = "$(sha1sum "$ARCHIVE" | cut -d' ' -f1)"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-assets
+          path: |
+            ${{ steps.package.outputs.archive }}
+            ${{ steps.package.outputs.archive-sha1sum }}
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+          overwrite: true
+
+  publish:
+    name: Publish GitHub Release
+    needs: [release, package]
+    if: needs.release.outputs.created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-assets
+      - name: Attach plugin assets and publish the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.release.outputs.tag }}
+          ARCHIVE: ${{ needs.package.outputs.archive }}
+        run: |
+          if [[ "$(gh release view "$TAG" --json isDraft --jq .isDraft)" == true ]]; then
+            gh release upload "$TAG" "$ARCHIVE" "$ARCHIVE.sha1" --clobber
+            gh release edit "$TAG" --draft=false
+          fi
+          gh release view "$TAG" --json isDraft,assets |
+            jq -e --arg zip "$ARCHIVE" '
+              (.isDraft == false) and
+              ([.assets[].name] | contains([$zip, ($zip + ".sha1")]))'

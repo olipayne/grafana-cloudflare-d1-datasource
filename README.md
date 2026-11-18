@@ -131,3 +131,11 @@ This plugin allows Grafana to connect to [Cloudflare D1](https://developers.clou
     - Ensure `npm run dev` is running in one terminal.
     - Build the backend binary for your Docker architecture, then run `npm run server`.
     - Open http://localhost:3000. The provisioned Cloudflare D1 datasource uses dummy credentials for smoke tests. Configure your own datasource to run live queries.
+
+## Releases
+
+Use Conventional Commit titles for squash merges. A `fix:` produces a patch, a `feat:` a minor release, and a breaking change (for example, `feat!:`) a major release.
+
+Release Please maintains a release PR against `main` with the proposed version and changelog. Review those changes and merge that PR when you want to publish. The workflow tags the release commit as `vX.Y.Z`, validates the Grafana plugin ZIP and its SHA-1 checksum, then attaches both to the [GitHub Release](https://github.com/olipayne/grafana-cloudflare-d1-datasource/releases). If packaging or upload fails, use **Re-run failed jobs** on that Release Please run to finish the draft. The existing tag workflow also supports manually pushed version tags.
+
+The workflow uses the repository's GitHub token. Enable **Settings → Actions → General → Allow GitHub Actions to create and approve pull requests** so it can maintain the release PR. A configured `GRAFANA_ACCESS_POLICY_TOKEN` enables plugin signing during release packaging. Grafana catalog submission is a separate maintainer action.
