@@ -48,18 +48,22 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.release.outputs.sha || github.sha }}
+          ref: ${{ needs.release.outputs.tag && format('refs/tags/{0}', needs.release.outputs.tag) || github.sha }}
           persist-credentials: false
 
       - name: Read project toolchain and check release version
         id: versions
         env:
           TAG: ${{ needs.release.outputs.tag }}
+          RELEASE_SHA: ${{ needs.release.outputs.sha }}
         run: |
           version=$(jq -er .version package.json)
           jq -e --arg v "$version" '.["."] == $v' .release-please-manifest.json
           jq -e --arg v "$version" '.version == $v and .packages[""].version == $v' package-lock.json
-          if [[ -n "$TAG" ]]; then test "$TAG" = "v$version"; fi
+          if [[ -n "$TAG" ]]; then
+            test "$TAG" = "v$version"
+            test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+          fi
           echo "node=$(cat .nvmrc)" >> "$GITHUB_OUTPUT"
           echo "go=$(awk '$1 == "go" {print $2}' go.mod)" >> "$GITHUB_OUTPUT"
 
