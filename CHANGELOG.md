@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.7](https://github.com/olipayne/grafana-cloudflare-d1-datasource/compare/v1.0.6...v1.0.7) (2026-11-21)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/grafana/grafana-plugin-sdk-go to v0.302.0 ([#120](https://github.com/olipayne/grafana-cloudflare-d1-datasource/issues/120)) ([ea2bd0b](https://github.com/olipayne/grafana-cloudflare-d1-datasource/commit/ea2bd0bb4da0bd230aee8bedfe8d22ff24fffb73))
+* honor Grafana cancellation for D1 requests ([#127](https://github.com/olipayne/grafana-cloudflare-d1-datasource/issues/127)) ([537d9ac](https://github.com/olipayne/grafana-cloudflare-d1-datasource/commit/537d9ac498d7cd89ec79a94666d4f7a7144f9722))
+
 ## [1.0.6](https://github.com/olipayne/grafana-cloudflare-d1-datasource/compare/v1.0.5...v1.0.6) (2026-11-18)
 
 The Cloudflare D1 query and configuration editors now have verified browser coverage on Grafana 10.4 through 13.3 and nightly. The plugin uses Grafana frontend SDK 13.3.1 and backend SDK 0.300.0. [#124](https://github.com/olipayne/grafana-cloudflare-d1-datasource/pull/124)
