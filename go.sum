@@ -100,6 +100,8 @@ github.com/grafana/grafana-plugin-sdk-go v0.300.0 h1:NRD3v1zA+b4QHmDQQKm0d9i61Ic
 github.com/grafana/grafana-plugin-sdk-go v0.300.0/go.mod h1:jn0STRnbD8hy+AKde9EE9QzLyulzq+4BkYc82+3R6KA=
 github.com/grafana/grafana-plugin-sdk-go v0.302.0 h1:034qMvUG6ohHnfzF/FS4qZ9d1Xu0RL9RxM+1BW0WdIE=
 github.com/grafana/grafana-plugin-sdk-go v0.302.0/go.mod h1:HQpZ7gOfxlW9q806q38LXqkxj6XPEIs6cINUCTHVmCM=
+github.com/grafana/grafana-plugin-sdk-go v0.303.0 h1:IZg5Fu0WHgaEzvYQsPeLGz89zNHUDwX5T1ylxVmTJEM=
+github.com/grafana/grafana-plugin-sdk-go v0.303.0/go.mod h1:Ee7cjex9VK/hMBunzLCDm32GQCEgRz4Jouo1jbMJINc=
 github.com/grafana/otel-profiling-go v0.7.0 h1:Q6CBLSgAnYmNQNNrj4ipG0S/K/K8iazA9E4kYRzZf0I=
 github.com/grafana/otel-profiling-go v0.7.0/go.mod h1:Gt7LHg3HEfBoU8ZVArhqYaiA65EjcBe3nd3+arX6eMY=
 github.com/grafana/pyroscope-go/godeltaprof v0.1.12 h1:X6OemT2WcLtxdmNukEQuIp0c+efWVI/tBTd0oeWeDHI=
@@ -292,6 +294,8 @@ golang.org/x/net v0.0.0-20201021035429-f5854403a974/go.mod h1:sp8m0HH+o8qH0wwXwY
 golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4/go.mod h1:p54w0d4576C0XHj96bSt6lcn1PtDYWL6XObtHCRCNQM=
 golang.org/x/net v0.62.0 h1:18ELalfM5+XNRwzM2nYqXsZQ9ByS1uhj2O/U7+5jqRY=
 golang.org/x/net v0.62.0/go.mod h1:WgDCOTH8iwtB66T4/GfI94AHo/hhdb7Hah9NDseQfiI=
+golang.org/x/net v0.63.0 h1:HCoTmNh9EpD1PpK8gBNFY4gcTY4N+KQEO8ylfIKqFJ0=
+golang.org/x/net v0.63.0/go.mod h1:15JLg3IX1bLjHK264EZQEbIpTiR/KVLuo9CTRWd0pig=
 golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be/go.mod h1:N/0e6XlmueqKjAGxoOufVs8QHGRruUQn6yWY3a++T0U=
 golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20181108010431-42b317875d0f/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
